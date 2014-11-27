@@ -23,7 +23,7 @@ while True:
     male = total - female
     gender_opts = ['m', 'f', 'a', 'q']
     while True:
-        gender_opt = raw_input('There are a total of ' + str(total) + ' speakers, ' + str(male) + ' male and ' + str(female) + ' female. Download male, female, or all? (M/F/A). Q to quit.').lower()
+        gender_opt = raw_input('There are a total of ' + str(total) + ' speakers, ' + str(male) + ' male and ' + str(female) + ' female. Download male, female, or all? (M/F/A). Q to quit: ').lower()
         if gender_opt in gender_opts: break
     if gender_opt == 'q': continue
 
@@ -36,23 +36,39 @@ while True:
     filenames = [f.encode('ascii') for f in filenames]
 
     # retrieving info
-    info = re.findall('(?<=,</a> )' + gender + '[a-z, ]*', page.text)
-    info = [i.encode('ascii') for i in info]
+    info_dat = re.findall('(?<=,</a> )' + gender + '[a-z, ]*', page.text)
+    info_dat = [i.encode('ascii') for i in info_dat]
+    info = [i.split(', ') for i in info_dat]
+
+    # select region
+    while True:
+        region = raw_input('From what region (A for all): ').lower()
+        if region == 'a': break
+        new_filenames = []
+        new_info_dat = []
+        for i in range(len(info)):
+            if region in info[i]:
+                new_filenames += filenames[i]
+                new_info_dat += info_dat[i]
+        affirm = raw_input( 'There are ' + str(len(new_filenames)) + ' speakers from ' + region + ', OK? y/n: ')
+        if affirm == 'y':
+            filenames = new_filenames
+            info_dat = new_info_dat
+            break
 
     # how many to get?
-    num_str = ' '
     while True:
-        num_str = raw_input('How many files would you like to get? A for all')
-        if num_str.upper() == 'A': break
+        num_str = raw_input('How many files would you like to get? A for all: ').upper()
+        if num_str == 'A': break
         if num_str.isdigit():
             num = int(num_str)
             if num <= len(filenames) and num > 0:
                 filenames = filenames[0:num]
-                info = info[0:num]
+                info_dat = info_dat[0:num]
                 break
         print 'Please enter a valid response.'
 
-    info = '\n'.join('%s: %s' % t for t in zip(filenames, info))
+    info_dat = '\n'.join('%s: %s' % t for t in zip(filenames, info_dat))
 
     # making the language folder
     os.makedirs(lang)
@@ -61,7 +77,7 @@ while True:
         os.system('wget -O '+f+'.mov http://accent.gmu.edu/soundtracks/'+filename+'.mov')
         os.system('ffmpeg -i '+f+'.mov -vn -ar 44100 -ac 2 -ab 192k -f wav '+f+'.wav')
     info_file = open(lang+'/info.txt', 'w')
-    info_file.write(info)
+    info_file.write(info_dat)
     info_file.close()
 
 
