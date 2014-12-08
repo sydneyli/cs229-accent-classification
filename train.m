@@ -60,9 +60,9 @@ for syl = 1:size(by_syl,1)
     end
 
     disp('    training & testing ML model...');
-    [h, err] = run_model(X, y, 'gmm')
+    [h, err] = run_model(X, y, 'nb') % gmm, k-means svm nb softmaxlogreg GDA
     err_by_syl(syl) = err;
-    hypotheses(syl,:) = h';
+    %hypotheses(syl,:) = h';
 end
 
 % 

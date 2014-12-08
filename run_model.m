@@ -4,35 +4,58 @@ function [h, err] = run_model(X, y, model)
     
     if any(ismember(supervised, model))
         num_files = length(y);
-
         h = zeros(1, num_files);
-        %LOOCV
-        for i = 1:num_files
-            X_temp = X;
-            X_temp(i,:) = [];
-            y_temp = y;
-            y_temp(i) = [];
-            X_test = X(i,:);
-            y_test = y(i);
+        errs = zeros(10,5);
+        %all_errs = zeros(10,5);
+        for i = 1:10
+            % PERCENTAGE USED TO TRAIN: 70%
+            rand_ind = randperm(length(y), floor(0.7*length(y)));
+            not_rand_ind = setdiff(1:length(y), rand_ind);
+            X_temp = X(rand_ind,:);
+            y_temp = y(rand_ind,:);
+            X_test = X(not_rand_ind,:);
+            y_test = y(not_rand_ind,:);
 
+            %LOOCV
+    %         for i = 1:num_files
+    %             X_temp = X;
+    %             X_temp(i,:) = [];
+    %             y_temp = y;
+    %             y_temp(i) = [];
+    %             X_test = X(i,:);
+    %             y_test = y(i);
+    % 
             if strcmp (model, 'svm')
-                results = multisvm(X_temp, y_temp, X_test)
+                try
+                    results = multisvm(X_temp, y_temp, X_test)
+                catch err
+                    results = zeros(length(y_test),1)
+                end
             elseif strcmp (model,'logreg')
                 [m, dev, stats] = mnrfit(X_temp, y_temp);
-                results = mnrval(m, X_test)
-                [max_val, max_ind] = max(results);
-                results = mean(max_ind);
+                results = mnrval(m, X_test);
+                [max_val, results] = max(results,[],2);
             elseif strcmp (model,'nb')
                 m = fitNaiveBayes(X_temp, y_temp, 'dist', 'normal');
-                results = m.predict(X_test)
+                results = m.predict(X_test);
             elseif strcmp (model, 'gda')
                 m = fitcdiscr(X_temp, y_temp);
-                results = m.predict(X_test)
+                results = m.predict(X_test);
             end 
-
-            h(i) = results;
+            %errs(i) = sum(y_test ~= results)/length(results);
+            for j = 1:5
+                ind = find(y_test==j);
+                sum(y_test(ind) == results(ind))
+                errs(i,j) = 1-(sum(y_test(ind)==results(ind))/length(ind));
+            end
+            %h = [results y_test];
         end
-        err = sum(y' ~= h)/length(h);
+        err = mean(errs);
+        %err = mean(errs,1)
+% 
+%             h(i) = results;
+%         end
+%         err = sum(y' ~= h)/length(h);
     elseif any(ismember(unsupervised, model))
         if strcmp(model,'gmm')
             max(y)
